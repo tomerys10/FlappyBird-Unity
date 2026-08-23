@@ -30,12 +30,10 @@ public static class SpriteLibrary
     }
 
     /// <summary>
-    /// Sprites created at runtime have to match the ones placed in the scene, which
-    /// use an unlit material so they never depend on a 2D light being present.
-    /// Reusing the scene material is the most reliable option because it is a real
-    /// asset; building one from a shader only happens when the scene has no sprite.
-    /// Returns null when nothing usable is found, so callers keep Unity's default
-    /// sprite material rather than ending up with an invisible renderer.
+    /// Always builds from Shader.Find rather than copying a scene material.
+    /// Scene materials can point at package assets whose shaders have not
+    /// finished compiling yet, which leaves sprites invisible while pipes
+    /// created later still look fine.
     /// </summary>
     public static Material SpriteMaterial
     {
@@ -47,27 +45,9 @@ public static class SpriteLibrary
             }
 
             materialResolved = true;
-            spriteMaterial = FindSceneSpriteMaterial() ?? BuildSpriteMaterial();
+            spriteMaterial = BuildSpriteMaterial();
             return spriteMaterial;
         }
-    }
-
-    private static Material FindSceneSpriteMaterial()
-    {
-        SpriteRenderer[] renderers = Object.FindObjectsByType<SpriteRenderer>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None);
-
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            Material material = renderers[i] != null ? renderers[i].sharedMaterial : null;
-            if (material != null && IsUsable(material.shader))
-            {
-                return material;
-            }
-        }
-
-        return null;
     }
 
     private static Material BuildSpriteMaterial()
@@ -87,6 +67,32 @@ public static class SpriteLibrary
     private static bool IsUsable(Shader shader)
     {
         return shader != null && shader.isSupported && shader.name != "Hidden/InternalErrorShader";
+    }
+
+    /// <summary>
+    /// Applies a known-good sprite material to every SpriteRenderer in the scene,
+    /// so objects placed in the editor stay visible even when their assigned
+    /// package material fails to load on a fresh open.
+    /// </summary>
+    public static void FixAllSceneMaterials()
+    {
+        Material material = SpriteMaterial;
+        if (material == null)
+        {
+            return;
+        }
+
+        SpriteRenderer[] renderers = Object.FindObjectsByType<SpriteRenderer>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].sharedMaterial = material;
+            }
+        }
     }
 
     public static SpriteRenderer CreateRenderer(GameObject owner, Sprite sprite, string sortingLayer, int order)

@@ -28,8 +28,56 @@ public class BirdController : MonoBehaviour
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
-        activeFrames = flapFrames;
+        EnsureVisible();
+        activeFrames = ResolveFrames();
         altFrames = LoadAltFrames();
+    }
+
+    /// <summary>
+    /// Package sprite materials sometimes fail to draw after a reimport. Force a
+    /// working material and a valid flap sprite so the bird cannot disappear.
+    /// </summary>
+    private void EnsureVisible()
+    {
+        Material material = SpriteLibrary.SpriteMaterial;
+        if (material != null)
+        {
+            spriteRenderer.sharedMaterial = material;
+        }
+
+        spriteRenderer.enabled = true;
+        spriteRenderer.sortingLayerName = "Bird";
+        spriteRenderer.sortingOrder = 10;
+
+        if (spriteRenderer.sprite == null && flapFrames != null && flapFrames.Length > 0)
+        {
+            spriteRenderer.sprite = flapFrames[0];
+        }
+
+        Color color = spriteRenderer.color;
+        if (color.a < 0.01f)
+        {
+            color.a = 1f;
+            spriteRenderer.color = color;
+        }
+    }
+
+    private Sprite[] ResolveFrames()
+    {
+        if (flapFrames != null && flapFrames.Length > 0 && flapFrames[0] != null)
+        {
+            return flapFrames;
+        }
+
+        Sprite frame0 = SpriteLibrary.Load("bird_0");
+        Sprite frame1 = SpriteLibrary.Load("bird_1");
+        Sprite frame2 = SpriteLibrary.Load("bird_2");
+        if (frame0 != null && frame1 != null && frame2 != null)
+        {
+            return new[] { frame0, frame1, frame2 };
+        }
+
+        return flapFrames;
     }
 
     private static Sprite[] LoadAltFrames()

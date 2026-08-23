@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
 
         HideLoosePipes();
         FixCamera();
+        SpriteLibrary.FixAllSceneMaterials();
         CreateHelpers();
     }
 
