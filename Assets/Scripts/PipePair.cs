@@ -128,6 +128,81 @@ public class PipePair : MonoBehaviour
             }
         }
 
-        return null;
+        pipeSprite = BuildFallbackPipe();
+        return pipeSprite;
+    }
+
+    /// <summary>
+    /// A clone without the generated art would spawn invisible pipes that still
+    /// kill the player, so an equivalent pipe is drawn in code as a last resort.
+    /// </summary>
+    private static Sprite BuildFallbackPipe()
+    {
+        const int width = 52;
+        const int height = 320;
+        const int lipTop = 292;
+
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        var body = new Color32(115, 191, 46, 255);
+        var dark = new Color32(73, 128, 28, 255);
+        var light = new Color32(168, 224, 86, 255);
+        var outline = new Color32(47, 84, 16, 255);
+        var lip = new Color32(98, 168, 36, 255);
+        var clear = new Color32(0, 0, 0, 0);
+
+        var pixels = new Color32[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            bool inLip = y >= lipTop;
+            int left = inLip ? 0 : 6;
+            int right = inLip ? width - 1 : width - 7;
+
+            for (int x = 0; x < width; x++)
+            {
+                if (x < left || x > right)
+                {
+                    pixels[y * width + x] = clear;
+                    continue;
+                }
+
+                bool edge = x == left || x == right || y == lipTop || y == height - 1 || (!inLip && y == 0);
+                Color32 color;
+                if (edge)
+                {
+                    color = outline;
+                }
+                else if (x < left + (inLip ? 10 : 8))
+                {
+                    color = light;
+                }
+                else if (x > right - (inLip ? 10 : 8))
+                {
+                    color = dark;
+                }
+                else
+                {
+                    color = inLip ? lip : body;
+                }
+
+                pixels[y * width + x] = color;
+            }
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
+
+        var sprite = Sprite.Create(
+            texture,
+            new Rect(0f, 0f, width, height),
+            new Vector2(0.5f, 1f),
+            32f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
     }
 }

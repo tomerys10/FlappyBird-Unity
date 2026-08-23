@@ -15,11 +15,18 @@ public class Dragon : MonoBehaviour
     private Fireball[] fireballs;
 
     private bool active;
+    private bool hasArt;
     private float enterTimer;
     private float shotTimer;
     private float startX;
 
     public bool IsActive => active;
+
+    /// <summary>
+    /// Without the generated art the dragon and its shots are invisible, which
+    /// would kill the player for no visible reason, so it stays out of the game.
+    /// </summary>
+    public bool CanActivate => hasArt;
 
     private void Awake()
     {
@@ -30,15 +37,23 @@ public class Dragon : MonoBehaviour
 
     private void BuildBody()
     {
+        Sprite sprite = SpriteLibrary.Load("dragon");
+        hasArt = sprite != null;
+
         var visual = new GameObject("DragonBody");
         visual.transform.SetParent(transform, false);
-        SpriteLibrary.CreateRenderer(visual, SpriteLibrary.Load("dragon"), "Pipes", 20);
+        SpriteLibrary.CreateRenderer(visual, sprite, "Pipes", 20);
         body = visual.transform;
     }
 
     private void BuildFireballs()
     {
         Sprite sprite = SpriteLibrary.Load("fireball");
+        if (sprite == null)
+        {
+            hasArt = false;
+        }
+
         fireballs = new Fireball[FireballPoolSize];
 
         for (int i = 0; i < FireballPoolSize; i++)

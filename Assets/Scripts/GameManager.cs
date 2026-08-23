@@ -87,7 +87,10 @@ public class GameManager : MonoBehaviour
         SpriteRenderer[] renderers = FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < renderers.Length; i++)
         {
-            renderers[i].sharedMaterial = material;
+            if (renderers[i] != null)
+            {
+                renderers[i].sharedMaterial = material;
+            }
         }
     }
 
@@ -206,7 +209,7 @@ public class GameManager : MonoBehaviour
             bird.ApplyScoreLook(Score);
         }
 
-        if (dragon != null && !dragon.IsActive && Score >= config.dragonFromScore)
+        if (dragon != null && dragon.CanActivate && !dragon.IsActive && Score >= config.dragonFromScore)
         {
             dragon.Activate(config, bird != null ? bird.transform : null);
         }

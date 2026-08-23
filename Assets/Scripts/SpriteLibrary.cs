@@ -9,7 +9,15 @@ public static class SpriteLibrary
     private const string ArtPath = "FlappyArt/";
     private const string AudioPath = "FlappyAudio/";
 
+    private static readonly string[] ShaderCandidates =
+    {
+        "Universal Render Pipeline/2D/Sprite-Unlit-Default",
+        "Universal Render Pipeline/2D/Sprite-Lit-Default",
+        "Sprites/Default"
+    };
+
     private static Material spriteMaterial;
+    private static bool materialResolved;
 
     public static Sprite Load(string spriteName)
     {
@@ -24,37 +32,52 @@ public static class SpriteLibrary
     /// <summary>
     /// URP 2D renders sprites black when they use a lit material without a light.
     /// A single shared unlit material keeps every runtime sprite visible and cheap.
+    /// Returns null when no usable shader exists, so callers keep Unity's default
+    /// sprite material instead of ending up with an invisible renderer.
     /// </summary>
     public static Material SpriteMaterial
     {
         get
         {
-            if (spriteMaterial != null)
+            if (materialResolved)
             {
                 return spriteMaterial;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
+            materialResolved = true;
 
-            if (shader != null)
+            for (int i = 0; i < ShaderCandidates.Length; i++)
             {
-                spriteMaterial = new Material(shader);
+                Shader shader = Shader.Find(ShaderCandidates[i]);
+                if (!IsUsable(shader))
+                {
+                    continue;
+                }
+
+                spriteMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                return spriteMaterial;
             }
 
             return spriteMaterial;
         }
     }
 
+    private static bool IsUsable(Shader shader)
+    {
+        return shader != null && shader.isSupported && shader.name != "Hidden/InternalErrorShader";
+    }
+
     public static SpriteRenderer CreateRenderer(GameObject owner, Sprite sprite, string sortingLayer, int order)
     {
         SpriteRenderer renderer = owner.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
-        renderer.sharedMaterial = SpriteMaterial;
         renderer.sortingOrder = order;
+
+        Material material = SpriteMaterial;
+        if (material != null)
+        {
+            renderer.sharedMaterial = material;
+        }
 
         if (!string.IsNullOrEmpty(sortingLayer) && SortingLayerExists(sortingLayer))
         {
