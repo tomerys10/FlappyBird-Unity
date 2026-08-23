@@ -1,4 +1,4 @@
-# Flappy Bird — Unity Remake
+# Flappy Bird: Unity Remake
 
 A complete remake of the classic Flappy Bird arcade game, built from scratch in Unity 6 with the Universal Render Pipeline in 2D mode.
 
@@ -20,7 +20,7 @@ The bird never moves horizontally, the world moves instead. Your only control is
 
 ![Bird selection screen](docs/images/ready-screen.png)
 
-Before the first flap, the ready screen shows a CHOOSE BIRD row with six selectable birds. Each option is a different colour — yellow, red, orange, green, light blue and purple — and the currently selected one is marked with a bright white outline.
+Before the first flap, the ready screen shows a CHOOSE BIRD row with six selectable birds. Each option is a different colour: yellow, red, orange, green, light blue and purple, and the currently selected one is marked with a bright white outline.
 
 All six birds are purely cosmetic. They are identical in size, hitbox, weight and flight behaviour, so the choice never makes the game easier or harder.
 
@@ -30,7 +30,7 @@ The bird also gently bobs up and down on this screen, which signals that the gam
 
 ![Flying between the pipes](docs/images/gameplay-pipes.png)
 
-This is the heart of the game. Pipes arrive in pairs — one hanging from the top of the screen, one rising from the bottom — with a gap between them. The vertical position of that gap is randomised for every pair, so no two runs are the same.
+This is the heart of the game. Pipes arrive in pairs: one hanging from the top of the screen, one rising from the bottom, with a gap between them. The vertical position of that gap is randomised for every pair, so no two runs are the same.
 
 Your objective is to guide the bird cleanly through each gap without touching anything. As shown above, the bird has to thread the narrow opening between the upper and lower pipe.
 
@@ -46,7 +46,7 @@ The bird also tilts as it moves: it angles upward right after a flap and rotates
 
 ![Score counter during play](docs/images/score-hud.png)
 
-The large number at the top of the screen is your live score. It counts how many pipe pairs you have successfully passed so far in the current run — in the screenshot above, the bird has cleared one pipe pair, so the counter reads `1`.
+The large number at the top of the screen is your live score. It counts how many pipe pairs you have successfully passed so far in the current run. In the screenshot above, the bird has cleared one pipe pair, so the counter reads `1`.
 
 A point is awarded the instant the bird passes the horizontal centre of a pipe pair, and a short chime plays to confirm it. When the run ends, the game over panel shows your final score next to your all-time BEST score. If you beat your previous record, the new value is saved automatically and will still be there the next time you launch the game.
 
