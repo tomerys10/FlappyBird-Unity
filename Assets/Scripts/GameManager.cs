@@ -97,6 +97,8 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        // Second pass after Resources finish importing on a fresh project open.
+        SpriteLibrary.FixAllSceneMaterials();
         EnterReady();
     }
 

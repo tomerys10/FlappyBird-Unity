@@ -11,9 +11,9 @@ public static class SpriteLibrary
 
     private static readonly string[] ShaderCandidates =
     {
+        "Sprites/Default",
         "Universal Render Pipeline/2D/Sprite-Unlit-Default",
-        "Universal Render Pipeline/2D/Sprite-Lit-Default",
-        "Sprites/Default"
+        "Universal Render Pipeline/2D/Sprite-Lit-Default"
     };
 
     private static Material spriteMaterial;
@@ -30,10 +30,8 @@ public static class SpriteLibrary
     }
 
     /// <summary>
-    /// Always builds from Shader.Find rather than copying a scene material.
-    /// Scene materials can point at package assets whose shaders have not
-    /// finished compiling yet, which leaves sprites invisible while pipes
-    /// created later still look fine.
+    /// Prefer a material shipped in Resources so sprites never wait on Shader.Find
+    /// during the first frames after a fresh open.
     /// </summary>
     public static Material SpriteMaterial
     {
@@ -45,7 +43,12 @@ public static class SpriteLibrary
             }
 
             materialResolved = true;
-            spriteMaterial = BuildSpriteMaterial();
+            spriteMaterial = Resources.Load<Material>("FlappySpriteUnlit");
+            if (spriteMaterial == null)
+            {
+                spriteMaterial = BuildSpriteMaterial();
+            }
+
             return spriteMaterial;
         }
     }
@@ -70,9 +73,7 @@ public static class SpriteLibrary
     }
 
     /// <summary>
-    /// Applies a known-good sprite material to every SpriteRenderer in the scene,
-    /// so objects placed in the editor stay visible even when their assigned
-    /// package material fails to load on a fresh open.
+    /// Applies a known-good sprite material to every SpriteRenderer in the scene.
     /// </summary>
     public static void FixAllSceneMaterials()
     {

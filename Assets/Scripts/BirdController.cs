@@ -11,10 +11,12 @@ public class BirdController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Sprite[] altFrames;
     private Sprite[] activeFrames;
+    private Sprite[] mainFrames;
     private Vector3 startPosition;
     private float idleTime;
     private float animTime;
     private bool dead;
+    private bool visualsReady;
 
     private GameConfig Config => GameManager.Instance.Config;
 
@@ -28,17 +30,42 @@ public class BirdController : MonoBehaviour
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
-        EnsureVisible();
-        activeFrames = ResolveFrames();
+        RebuildVisuals();
         altFrames = LoadAltFrames();
     }
 
-    /// <summary>
-    /// Package sprite materials sometimes fail to draw after a reimport. Force a
-    /// working material and a valid flap sprite so the bird cannot disappear.
-    /// </summary>
-    private void EnsureVisible()
+    private void Start()
     {
+        // Materials / Resources may finish importing after Awake on a fresh open.
+        RebuildVisuals();
+        ResetBird();
+    }
+
+    private void OnEnable()
+    {
+        RebuildVisuals();
+    }
+
+    /// <summary>
+    /// Scene sprites can stay invisible when package materials fail to load.
+    /// Rebuild the bird the same way pipes do: Resources sprite + project material,
+    /// with a procedural sprite as the last resort.
+    /// </summary>
+    private void RebuildVisuals()
+    {
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        activeFrames = ResolveFrames();
+        if (activeFrames == null || activeFrames.Length == 0 || activeFrames[0] == null)
+        {
+            activeFrames = BuildProceduralFrames();
+        }
+
+        mainFrames = activeFrames;
+
         Material material = SpriteLibrary.SpriteMaterial;
         if (material != null)
         {
@@ -46,29 +73,26 @@ public class BirdController : MonoBehaviour
         }
 
         spriteRenderer.enabled = true;
-        spriteRenderer.sortingLayerName = "Bird";
-        spriteRenderer.sortingOrder = 10;
-
-        if (spriteRenderer.sprite == null && flapFrames != null && flapFrames.Length > 0)
-        {
-            spriteRenderer.sprite = flapFrames[0];
-        }
+        // Default layer is always lit by the global 2D light, even if custom
+        // sorting-layer masks get reset by the editor.
+        spriteRenderer.sortingLayerName = "Default";
+        spriteRenderer.sortingOrder = 200;
+        spriteRenderer.sprite = activeFrames[0];
 
         Color color = spriteRenderer.color;
-        if (color.a < 0.01f)
+        color.a = 1f;
+        if (PlayerPrefsHasTint())
         {
-            color.a = 1f;
-            spriteRenderer.color = color;
+            color = ReadSavedTint();
         }
+
+        spriteRenderer.color = color;
+        transform.localScale = Vector3.one;
+        visualsReady = true;
     }
 
     private Sprite[] ResolveFrames()
     {
-        if (flapFrames != null && flapFrames.Length > 0 && flapFrames[0] != null)
-        {
-            return flapFrames;
-        }
-
         Sprite frame0 = SpriteLibrary.Load("bird_0");
         Sprite frame1 = SpriteLibrary.Load("bird_1");
         Sprite frame2 = SpriteLibrary.Load("bird_2");
@@ -77,7 +101,12 @@ public class BirdController : MonoBehaviour
             return new[] { frame0, frame1, frame2 };
         }
 
-        return flapFrames;
+        if (flapFrames != null && flapFrames.Length > 0 && flapFrames[0] != null)
+        {
+            return flapFrames;
+        }
+
+        return null;
     }
 
     private static Sprite[] LoadAltFrames()
@@ -94,13 +123,111 @@ public class BirdController : MonoBehaviour
         return new[] { frame0, frame1, frame2 };
     }
 
-    private void Start()
+    private static Sprite[] BuildProceduralFrames()
     {
-        ResetBird();
+        return new[]
+        {
+            BuildBirdSprite(0),
+            BuildBirdSprite(1),
+            BuildBirdSprite(2)
+        };
+    }
+
+    private static Sprite BuildBirdSprite(int frame)
+    {
+        const int width = 34;
+        const int height = 24;
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        var clear = new Color32(0, 0, 0, 0);
+        var body = new Color32(247, 226, 107, 255);
+        var bodyDark = new Color32(224, 186, 48, 255);
+        var white = new Color32(255, 255, 255, 255);
+        var beak = new Color32(240, 90, 40, 255);
+        var outline = new Color32(40, 28, 16, 255);
+        var wing = frame == 0
+            ? new Color32(247, 248, 230, 255)
+            : frame == 1
+                ? new Color32(244, 160, 64, 255)
+                : new Color32(232, 96, 40, 255);
+
+        var pixels = new Color32[width * height];
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = clear;
+        }
+
+        void Set(int x, int y, Color32 color)
+        {
+            if (x >= 0 && x < width && y >= 0 && y < height)
+            {
+                pixels[y * width + x] = color;
+            }
+        }
+
+        void FillCircle(int cx, int cy, int radius, Color32 color)
+        {
+            int r2 = radius * radius;
+            for (int y = cy - radius; y <= cy + radius; y++)
+            {
+                for (int x = cx - radius; x <= cx + radius; x++)
+                {
+                    int dx = x - cx;
+                    int dy = y - cy;
+                    if (dx * dx + dy * dy <= r2)
+                    {
+                        Set(x, y, color);
+                    }
+                }
+            }
+        }
+
+        void Fill(int x, int y, int w, int h, Color32 color)
+        {
+            for (int yy = y; yy < y + h; yy++)
+            {
+                for (int xx = x; xx < x + w; xx++)
+                {
+                    Set(xx, yy, color);
+                }
+            }
+        }
+
+        FillCircle(16, 11, 8, body);
+        Fill(10, 6, 14, 10, body);
+        Fill(12, 5, 10, 3, bodyDark);
+        FillCircle(23, 14, 4, white);
+        FillCircle(24, 14, 2, outline);
+        Fill(24, 9, 9, 4, beak);
+        FillCircle(8, 10, 4, white);
+
+        int wingY = frame == 0 ? 14 : frame == 1 ? 10 : 6;
+        FillCircle(12, wingY, 5, wing);
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
+
+        var sprite = Sprite.Create(
+            texture,
+            new Rect(0f, 0f, width, height),
+            new Vector2(0.5f, 0.5f),
+            32f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
     }
 
     private void Update()
     {
+        if (!visualsReady || spriteRenderer == null || spriteRenderer.sprite == null)
+        {
+            RebuildVisuals();
+        }
+
         if (GameManager.Instance == null)
         {
             return;
@@ -135,6 +262,7 @@ public class BirdController : MonoBehaviour
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
+        tint.a = 1f;
         spriteRenderer.color = tint;
     }
 
@@ -143,13 +271,10 @@ public class BirdController : MonoBehaviour
         return spriteRenderer != null ? spriteRenderer.color : Color.white;
     }
 
-    /// <summary>
-    /// Swaps to the second bird design once the player passes the milestone score.
-    /// </summary>
     public void ApplyScoreLook(int score)
     {
         bool useAlt = altFrames != null && GameManager.Instance != null && score >= Config.birdSwapScore;
-        Sprite[] wanted = useAlt ? altFrames : flapFrames;
+        Sprite[] wanted = useAlt ? altFrames : mainFrames;
 
         if (wanted == null || wanted.Length == 0 || wanted == activeFrames)
         {
@@ -163,6 +288,7 @@ public class BirdController : MonoBehaviour
     public void StartPlaying()
     {
         dead = false;
+        RebuildVisuals();
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = Config.gravityScale;
         Flap();
@@ -178,14 +304,7 @@ public class BirdController : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         rb.gravityScale = 0f;
 
-        if (activeFrames != null && activeFrames.Length > 0)
-        {
-            spriteRenderer.sprite = activeFrames[0];
-        }
-
-        spriteRenderer.color = PlayerPrefsHasTint()
-            ? ReadSavedTint()
-            : spriteRenderer.color;
+        RebuildVisuals();
     }
 
     private static bool PlayerPrefsHasTint()
@@ -233,7 +352,10 @@ public class BirdController : MonoBehaviour
 
         animTime += Time.deltaTime * Config.flapAnimFps;
         int frame = Mathf.FloorToInt(animTime) % activeFrames.Length;
-        spriteRenderer.sprite = activeFrames[frame];
+        if (activeFrames[frame] != null)
+        {
+            spriteRenderer.sprite = activeFrames[frame];
+        }
     }
 
     private void UpdateTilt()

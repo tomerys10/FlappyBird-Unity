@@ -59,9 +59,14 @@ public static class GenerateFlappyBirdArt
         var altBody = new Color32(120, 200, 255, 255);
         var altBodyDark = new Color32(64, 150, 220, 255);
 
+        SaveSpriteTo(ResourceArtFolder, "bird_0", DrawBird(0), Ppu, new Vector2(0.5f, 0.5f));
+        SaveSpriteTo(ResourceArtFolder, "bird_1", DrawBird(1), Ppu, new Vector2(0.5f, 0.5f));
+        SaveSpriteTo(ResourceArtFolder, "bird_2", DrawBird(2), Ppu, new Vector2(0.5f, 0.5f));
         SaveSpriteTo(ResourceArtFolder, "bird_alt_0", DrawBird(0, altBody, altBodyDark), Ppu, new Vector2(0.5f, 0.5f));
         SaveSpriteTo(ResourceArtFolder, "bird_alt_1", DrawBird(1, altBody, altBodyDark), Ppu, new Vector2(0.5f, 0.5f));
         SaveSpriteTo(ResourceArtFolder, "bird_alt_2", DrawBird(2, altBody, altBodyDark), Ppu, new Vector2(0.5f, 0.5f));
+        SaveSpriteTo(ResourceArtFolder, "background", DrawBackground(), Ppu, new Vector2(0.5f, 0.5f));
+        SaveSpriteTo(ResourceArtFolder, "ground", DrawGround(), Ppu, new Vector2(0.5f, 1f));
         SaveSpriteTo(ResourceArtFolder, "dragon", DrawDragon(), Ppu, new Vector2(0.5f, 0.5f));
         SaveSpriteTo(ResourceArtFolder, "fireball", DrawFireball(), Ppu, new Vector2(0.5f, 0.5f));
         SaveSpriteTo(ResourceArtFolder, "spark", DrawSpark(), Ppu, new Vector2(0.5f, 0.5f));
