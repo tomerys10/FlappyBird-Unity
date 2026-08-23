@@ -30,36 +30,58 @@ public static class SpriteLibrary
     }
 
     /// <summary>
-    /// URP 2D renders sprites black when they use a lit material without a light.
-    /// A single shared unlit material keeps every runtime sprite visible and cheap.
-    /// Returns null when no usable shader exists, so callers keep Unity's default
-    /// sprite material instead of ending up with an invisible renderer.
+    /// Sprites created at runtime have to match the ones placed in the scene, which
+    /// use an unlit material so they never depend on a 2D light being present.
+    /// Reusing the scene material is the most reliable option because it is a real
+    /// asset; building one from a shader only happens when the scene has no sprite.
+    /// Returns null when nothing usable is found, so callers keep Unity's default
+    /// sprite material rather than ending up with an invisible renderer.
     /// </summary>
     public static Material SpriteMaterial
     {
         get
         {
-            if (materialResolved)
+            if (materialResolved && spriteMaterial != null)
             {
                 return spriteMaterial;
             }
 
             materialResolved = true;
-
-            for (int i = 0; i < ShaderCandidates.Length; i++)
-            {
-                Shader shader = Shader.Find(ShaderCandidates[i]);
-                if (!IsUsable(shader))
-                {
-                    continue;
-                }
-
-                spriteMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-                return spriteMaterial;
-            }
-
+            spriteMaterial = FindSceneSpriteMaterial() ?? BuildSpriteMaterial();
             return spriteMaterial;
         }
+    }
+
+    private static Material FindSceneSpriteMaterial()
+    {
+        SpriteRenderer[] renderers = Object.FindObjectsByType<SpriteRenderer>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Material material = renderers[i] != null ? renderers[i].sharedMaterial : null;
+            if (material != null && IsUsable(material.shader))
+            {
+                return material;
+            }
+        }
+
+        return null;
+    }
+
+    private static Material BuildSpriteMaterial()
+    {
+        for (int i = 0; i < ShaderCandidates.Length; i++)
+        {
+            Shader shader = Shader.Find(ShaderCandidates[i]);
+            if (IsUsable(shader))
+            {
+                return new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+            }
+        }
+
+        return null;
     }
 
     private static bool IsUsable(Shader shader)
@@ -69,11 +91,12 @@ public static class SpriteLibrary
 
     public static SpriteRenderer CreateRenderer(GameObject owner, Sprite sprite, string sortingLayer, int order)
     {
+        Material material = SpriteMaterial;
+
         SpriteRenderer renderer = owner.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
         renderer.sortingOrder = order;
 
-        Material material = SpriteMaterial;
         if (material != null)
         {
             renderer.sharedMaterial = material;

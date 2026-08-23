@@ -43,7 +43,6 @@ public class GameManager : MonoBehaviour
 
         HideLoosePipes();
         FixCamera();
-        FixSceneSpriteMaterials();
         CreateHelpers();
     }
 
@@ -74,24 +73,6 @@ public class GameManager : MonoBehaviour
         cam.orthographicSize = 5f;
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(78f / 255f, 192f / 255f, 202f / 255f);
-    }
-
-    private static void FixSceneSpriteMaterials()
-    {
-        Material material = SpriteLibrary.SpriteMaterial;
-        if (material == null)
-        {
-            return;
-        }
-
-        SpriteRenderer[] renderers = FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            if (renderers[i] != null)
-            {
-                renderers[i].sharedMaterial = material;
-            }
-        }
     }
 
     /// <summary>
