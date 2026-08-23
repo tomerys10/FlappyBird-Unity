@@ -1,160 +1,121 @@
-# Game Design Document — Flappy Bird (Unity Remake)
+# Game Design Document: Flappy Bird (Unity Remake)
 
 | Field | Value |
 | --- | --- |
-| Working title | Flappy Bird — Unity Remake |
+| Working title | Flappy Bird: Unity Remake |
 | Genre | Arcade / endless side-scroller |
-| Platform | PC (Windows, macOS, Linux) — Unity standalone |
-| Engine | Unity `6000.3.20f1`, Universal Render Pipeline (2D Renderer) |
-| Orientation | Landscape, single fixed screen |
+| Platform | PC (Windows, macOS, Linux) with Unity |
+| Engine | Unity `6000.3.20f1`, Universal Render Pipeline (2D) |
+| Orientation | Landscape, one fixed screen |
 | Players | Single player |
-| Session length | 10 seconds to a few minutes per run |
-| Target audience | All ages; casual players and score chasers |
-| Art style | Procedurally generated pixel art, 32 pixels per unit |
-
----
+| Session length | About 10 seconds to a few minutes per run |
+| Target audience | All ages, casual players who like chasing high scores |
+| Art style | Pixel art made by code, 32 pixels per unit |
 
 ## 1. Overview
 
 ### 1.1 High concept
 
-A one-button endless arcade game. The player keeps a bird airborne by tapping,
-and threads it through an unbroken stream of pipe gaps. One touch ends the run.
-The whole design is built around a single readable rule and an immediately
-restartable failure state, so the player always feels the crash was their own
-fault and wants one more attempt.
+This is a simple endless arcade game with one button. The player keeps a bird in the air by tapping, and tries to fly it through gaps between pipes. If the bird touches anything, the run ends. The idea is that the rules are easy to understand, and after you crash you can restart right away and try again.
 
 ### 1.2 Design pillars
 
-1. **One input, total clarity.** The player only ever decides *when* to tap.
-   Nothing else is under their control, so every outcome is unambiguous.
-2. **Instant retry.** Failure costs seconds, not progress. The restart loop is
-   short enough that frustration never accumulates.
-3. **Readable feedback.** Every event — a point, a milestone, a crash — has a
-   distinct visual and audio response so the player never has to guess what
-   happened.
-4. **Self-contained content.** All art and audio are generated in-editor by
-   code, so the project has no external asset dependencies.
+1. **One input.** The player only chooses when to tap. Nothing else is controlled by them, so the game feels fair and clear.
+2. **Fast restart.** Losing only costs a few seconds. You can start again quickly, so it does not feel too frustrating.
+3. **Clear feedback.** When you score, hit a milestone, or crash, the game shows and plays something clear so you always know what happened.
+4. **Everything made in the project.** The art and sounds are created by an editor script, so we do not need outside asset packs.
 
 ### 1.3 Player experience goals
 
-The player should feel tense but never cheated. Difficulty is constant rather
-than escalating, which means improvement comes purely from the player's own
-timing skill. Milestone messages and medals give that improvement a visible
-shape, turning a raw number into a sense of personal progress.
-
----
+The player should feel challenged, but not cheated. The difficulty stays about the same during a run. You get better by improving your own timing. Messages like NICE / LEGENDARY and medals help make progress feel more rewarding than just watching a number go up.
 
 ## 2. Core gameplay
 
 ### 2.1 The loop
 
 ```
-Ready screen  →  choose bird colour  →  tap to start
-      ↑                                       ↓
-      │                              Playing: flap, dodge, score
-      │                                       ↓
-  Restart  ←  Game Over: feathers, score, best, medal
+Ready screen  ->  choose bird colour  ->  tap to start
+      ^                                       |
+      |                              Playing: flap, dodge, score
+      |                                       v
+  Restart  <-  Game Over: feathers, score, best, medal
 ```
 
 ### 2.2 Controls
 
 | Action | Input | Notes |
 | --- | --- | --- |
-| Start run | Left click / `Space` / `Up Arrow` | Same input as flapping |
-| Flap | Left click / `Space` / `Up Arrow` | Sets vertical velocity to a fixed value |
-| Restart | Click **RESTART** | Only active on the game over panel |
+| Start run | Left click / `Space` / `Up Arrow` | Same input as flying up |
+| Fly upward | Left click / `Space` / `Up Arrow` | Sets a fixed upward speed |
+| Restart | Click **RESTART** | Only works on the game over screen |
 
-Clicks that land on UI elements are filtered out so pressing a colour swatch does
-not accidentally start the run.
+Clicks on UI (like the colour buttons) do not start the game by mistake.
 
 ### 2.3 Bird physics
 
-The bird sits at a fixed horizontal position. Flapping overwrites the vertical
-velocity with a constant upward value rather than adding force, which makes every
-tap behave identically regardless of how fast the bird was already falling. This
-is what gives the control its precise, predictable feel.
+The bird stays at a fixed X position. When you flap, its upward speed is set to a fixed value (not added on top of the old speed). That way every tap feels the same.
 
 | Property | Value | Purpose |
 | --- | --- | --- |
-| Flap velocity | `5.6` | Upward speed applied on every tap |
-| Gravity scale | `2.7` | Downward acceleration |
-| Max fall speed | `-10` | Terminal velocity, keeps falls recoverable |
-| Rotate up angle | `28°` | Nose-up tilt just after a flap |
-| Rotate down angle | `-90°` | Nose-dive tilt at terminal velocity |
-| Rotate lerp | `8` | Smoothing speed between the two tilt extremes |
-| Flap animation | `10` fps | Three-frame wing cycle |
-| Idle bob | `0.18` amplitude, `3.4` speed | Ready-screen hover, signals "not started" |
+| Flap velocity | `5.6` | How fast the bird goes up after a tap |
+| Gravity scale | `2.7` | How fast it falls |
+| Max fall speed | `-10` | Top falling speed |
+| Rotate up angle | `28°` | Bird tilts up after a flap |
+| Rotate down angle | `-90°` | Bird tilts down while falling |
+| Rotate lerp | `8` | How smooth the tilt change is |
+| Flap animation | `10` fps | Three wing frames |
+| Idle bob | `0.18` amplitude, `3.4` speed | Small bounce on the ready screen |
 
-Collision uses a circle collider that is deliberately smaller than the drawn
-sprite, so near-misses read as skill rather than as unfair hits.
+The hitbox is a circle that is a bit smaller than the bird sprite, so close calls feel fair.
 
 ### 2.4 World and obstacles
 
 | Property | Value | Purpose |
 | --- | --- | --- |
-| Scroll speed | `2.55` units/sec | Pace of the world moving left |
-| Pipe spawn interval | `1.35` sec | Horizontal spacing between pairs |
-| Pipe gap | `2.25` units | Vertical opening the bird must fit through |
-| Gap centre range | `-1.15` to `2.05` | Randomised vertical placement per pair |
-| Spawn X | `7.5` | Just off the right edge of the camera |
-| Despawn X | `-8.5` | Just off the left edge; the pair returns to the pool |
-| Ground Y | `-4.7` | Kill floor, placed at the visible bottom edge |
-| Ceiling Y | `4.85` | Kill ceiling, placed at the visible top edge |
+| Scroll speed | `2.55` units/sec | How fast the world moves left |
+| Pipe spawn interval | `1.35` sec | Time between new pipe pairs |
+| Pipe gap | `2.25` units | Size of the opening the bird must fly through |
+| Gap centre range | `-1.15` to `2.05` | Random height of each gap |
+| Spawn X | `7.5` | Pipes appear off the right side of the screen |
+| Despawn X | `-8.5` | Pipes leave off the left side and go back to the pool |
+| Ground Y | `-4.7` | Death line at the bottom of the screen |
+| Ceiling Y | `4.85` | Death line at the top of the screen |
 
-Pipe pairs are pooled and recycled rather than instantiated and destroyed, which
-keeps allocation flat during long runs.
+Pipe pairs are reused from a pool instead of being created and deleted every time. That keeps the game smoother.
 
-The ground and ceiling are deliberately aligned to the visible screen edges. An
-earlier build placed the kill floor above the visible ground, which made the bird
-die in mid-air; the kill volumes are now repositioned at runtime from the config
-so they always match what the player can see.
+The ground and ceiling death areas are placed at the edges of the screen you can see. In an older version the ground kill zone was too high, so the bird died in the middle of the screen. Now it only dies when it reaches the real bottom.
 
 ### 2.5 Scoring
 
-One point is awarded the moment the bird crosses the horizontal centre of a pipe
-pair. Each pair can only score once per pass. The live score is displayed in
-large type at the top of the screen; the best score persists in `PlayerPrefs`
-under the key `FlappyBird.BestScore` and is updated whenever a run beats it.
+You get 1 point when the bird passes the middle of a pipe pair. Each pair gives a point only once. The score is shown as a big number at the top. The best score is saved with `PlayerPrefs` (key: `FlappyBird.BestScore`) and updates when you beat your old record.
 
 ### 2.6 Fail state
 
-Contact with any object tagged `Hazard` — pipes, ground, ceiling, dragon
-fireballs — ends the run. On failure the game:
+Touching anything tagged `Hazard` (pipes, ground, ceiling, dragon fireballs) ends the run. Then the game:
 
-1. Switches state to `GameOver`.
-2. Fires the feather burst at the bird's position.
-3. Stops pipe spawning and world scrolling.
-4. Deactivates the dragon.
-5. Lets the bird fall under increased gravity.
+1. Changes state to `GameOver`.
+2. Plays the feather burst at the bird.
+3. Stops spawning and scrolling pipes.
+4. Turns off the dragon.
+5. Lets the bird fall with stronger gravity.
 6. Plays the hit sound.
 7. Shows the game over panel after `0.85` seconds.
 
-The short delay before the panel appears lets the player see the crash and the
-feathers land, so the failure feels resolved rather than cut off.
-
----
+The short wait before the panel lets you see the crash and the feathers.
 
 ## 3. Features
 
 ### 3.1 Bird colour selection
 
-The ready screen presents six bird options: yellow, red, orange, green, light
-blue and purple. The selected swatch is highlighted with a full-opacity white
-frame while the others are dimmed.
+On the ready screen there are six colours: yellow, red, orange, green, light blue and purple. The selected one has a bright white border. The others look more faded.
 
-The feature is **purely cosmetic and strictly balance-neutral**. All six birds
-share the same sprite dimensions, collider radius, mass, flap velocity and
-gravity, so the choice cannot make a run easier or harder. The selection is
-written to `PlayerPrefs` and restored on the next launch.
+This is only cosmetic. All birds have the same size, hitbox, flap strength and gravity. The choice does not make the game easier or harder. The selected colour is saved in `PlayerPrefs` for next time.
 
 ### 3.2 Milestone cheers
 
-Every 5 points a bold praise message appears above the bird, scales up, drifts
-upward and fades out over `1.15` seconds. It is drawn with an outline so it stays
-legible against pipes, and it never overlaps the next gap.
+Every 5 points, a short message appears above the bird. It grows, moves up a bit, and fades out in about `1.15` seconds. It has an outline so it stays readable over the pipes.
 
-| Score | Message | Colour intent |
+| Score | Message | Colour |
 | --- | --- | --- |
 | 5 | NICE | Warm yellow |
 | 10 | WOW | Warm yellow |
@@ -164,171 +125,140 @@ legible against pipes, and it never overlaps the next gap.
 | 30 | GODLIKE | Green |
 | 40+ | MYTHIC | Violet |
 
-The escalating wording and colour give the player a sense of rank without adding
-any mechanical complexity.
+Higher scores get stronger words and different colours. This is meant to encourage the player.
 
 ### 3.3 Feather burst
 
-On impact, twelve feather particles spawn at the collision point. Each feather
-gets a randomised outward direction, spin rate, scale and lifetime, accelerates
-downward under its own gravity, flutters sideways on a sine wave, and fades to
-transparent as its life expires.
+When the bird hits a pipe or the ground, 12 small feathers come out from that point. Each feather has a random direction, spin, size and lifetime. They fall down, move a bit sideways, and fade out.
 
-Feathers are tinted with the player's selected bird colour, so the effect always
-matches the bird that just crashed. Like the pipes, the feather pool is
-preallocated and reused.
+The feathers use the same colour as the bird you chose. They are also reused from a pool, like the pipes.
 
 ### 3.4 Fireworks and celebration audio
 
-From 10 points onward, each milestone also triggers a firework burst of spark
-particles around the bird plus a celebratory arpeggio, layering extra reward on
-top of the cheer message for players who are doing well.
+From score 10 and up, each milestone also plays fireworks around the bird and a short celebration sound.
 
 ### 3.5 Dragon hazard
 
-At 15 points a dragon flies in from the right, tracks the bird's altitude at a
-slow follow speed, and fires horizontal fireballs on a timer. Because it follows
-slowly and only shoots horizontally, the player can always escape by changing
-altitude — the hazard raises tension without introducing unavoidable deaths.
+At score 15, a dragon comes in from the right. It slowly follows the bird's height and shoots fireballs sideways. Because it follows slowly and only shoots left/right, you can still dodge by flying higher or lower.
 
-The dragon only activates if its generated art is present. Without it the hazard
-is skipped entirely, so the player is never killed by an invisible projectile.
+The dragon only shows up if its art exists. If the art is missing, it does not activate, so you will not die from an invisible fireball.
 
 ### 3.6 Medals
 
 | Score | Medal |
 | --- | --- |
-| 10–19 | Bronze |
-| 20–29 | Silver |
-| 30–39 | Gold |
+| 10 to 19 | Bronze |
+| 20 to 29 | Silver |
+| 30 to 39 | Gold |
 | 40+ | Platinum |
 
-Medals appear on the game over panel and reflect the score of that run.
-
----
+Medals are shown on the game over screen for that run.
 
 ## 4. Systems architecture
 
 ### 4.1 State machine
 
-`GameManager` is a singleton that owns the authoritative game state:
+`GameManager` is a singleton and controls the main game state:
 
-| State | Behaviour |
+| State | What happens |
 | --- | --- |
-| `Ready` | Bird bobs in place, colour picker visible, world static, waiting for input |
-| `Playing` | Gravity active, pipes spawning and scrolling, scoring enabled |
-| `GameOver` | Scrolling stopped, bird falling, panel shown after a delay |
+| `Ready` | Bird bobs, colour picker is shown, world is still, waiting for input |
+| `Playing` | Gravity is on, pipes spawn and move, scoring works |
+| `GameOver` | Scrolling stops, bird falls, game over panel shows after a delay |
 
 ### 4.2 Script responsibilities
 
 | Script | Responsibility |
 | --- | --- |
-| `GameManager` | State machine, score, milestones, restart, scene bootstrapping |
+| `GameManager` | Game states, score, milestones, restart, startup fixes |
 | `GameState` | State enum |
-| `GameConfig` | ScriptableObject holding every tuning value |
-| `BirdController` | Gravity, flapping, tilt, frame animation, collision reporting |
-| `FlapInput` | Input abstraction across mouse and keyboard |
-| `PipeSpawner` | Pool management and spawn timing |
-| `PipePair` | Per-pair placement, scrolling, scoring trigger |
-| `ScrollRepeater` | Seamless looping of the background and ground strips |
-| `GameUI` | HUD, ready and game over panels, cheer messages, medals |
-| `BirdSelect` | Six-colour picker and its persistence |
-| `GameEffects` | Pooled sparks, feathers, fireworks |
-| `Dragon`, `Fireball` | Late-game hazard and its projectiles |
-| `GameAudio` | Flap, point, hit and death sound playback |
-| `SpriteLibrary` | Runtime sprite/material/audio loading with safe fallbacks |
+| `GameConfig` | ScriptableObject with all tuning numbers |
+| `BirdController` | Gravity, flap, tilt, animation, collision |
+| `FlapInput` | Reads mouse and keyboard input |
+| `PipeSpawner` | Pipe pool and spawn timing |
+| `PipePair` | Places each pair, moves it, gives the score |
+| `ScrollRepeater` | Loops the background and ground |
+| `GameUI` | HUD, ready/game over screens, cheers, medals |
+| `BirdSelect` | Six colour options and saving the choice |
+| `GameEffects` | Sparks, feathers, fireworks |
+| `Dragon`, `Fireball` | Late game hazard |
+| `GameAudio` | Flap, point, hit and death sounds |
+| `SpriteLibrary` | Loads sprites, materials and audio at runtime |
 
 ### 4.3 Data-driven tuning
 
-Every number in section 2 lives in `Assets/Data/GameConfig.asset`, a
-ScriptableObject. Difficulty can be retuned in the Inspector without touching a
-single line of code, which keeps balancing iteration fast.
+All the numbers from section 2 are in `Assets/Data/GameConfig.asset`. You can change difficulty in the Inspector without editing code.
 
 ### 4.4 Robustness decisions
 
-Several defensive choices exist so the project behaves identically on a fresh
-clone as it does on the original machine:
+Some safety choices help the game work the same after cloning from GitHub:
 
-- Scene sprites use materials that are reassigned at runtime, because a package
-  material that fails to load would otherwise leave objects invisible.
-- The bird rebuilds its sprite from `Resources` at runtime and falls back to a
-  procedurally drawn sprite if the asset is missing, so it can never disappear.
-- Pipes fall back to a code-drawn sprite rather than spawning invisible-but-lethal
-  colliders.
-- The dragon refuses to activate without its art, preventing invisible kills.
-- Kill volumes are repositioned from the config at startup so they always match
-  the visible screen edges.
-
----
+- Scene sprite materials are fixed at runtime if needed, so objects do not stay invisible.
+- The bird loads its sprite from `Resources`, and can draw a backup sprite in code if needed.
+- Pipes can also use a backup sprite drawn in code, instead of invisible deadly pipes.
+- The dragon does not start without its art.
+- Ground and ceiling death areas are set from the config at startup so they match the screen.
 
 ## 5. Art and audio
 
 ### 5.1 Art
 
-All sprites are generated by `Assets/Editor/GenerateFlappyBirdArt.cs` at a
-resolution of 32 pixels per unit, with point filtering and no compression to keep
-edges crisp.
+All sprites are made by `Assets/Editor/GenerateFlappyBirdArt.cs` at 32 pixels per unit, with point filtering and no compression.
 
 | Asset | Size (px) | Notes |
 | --- | --- | --- |
-| Bird | 34 × 24 | Three flap frames, transparent background, no outline box |
-| Pipe | 52 × 320 | Body plus lip, top-centre pivot |
-| Background | 576 × 384 | Sky gradient with clouds and hills |
-| Ground | 336 × 112 | Scrolling strip |
-| Medals | 48 × 48 | Four metal variants |
-| Panel | 220 × 140 | Game over backing |
-| Dragon | 64 × 48 | Late-game hazard |
-| Fireball | 20 × 20 | Dragon projectile |
-| Spark | 10 × 10 | Firework and feather particle base |
+| Bird | 34 x 24 | Three flap frames, transparent background, no black frame |
+| Pipe | 52 x 320 | Body and lip |
+| Background | 576 x 384 | Sky with clouds and hills |
+| Ground | 336 x 112 | Scrolling ground strip |
+| Medals | 48 x 48 | Four medal types |
+| Panel | 220 x 140 | Game over panel |
+| Dragon | 64 x 48 | Late game enemy |
+| Fireball | 20 x 20 | Dragon shot |
+| Spark | 10 x 10 | Used for fireworks / particles |
 
-Camera background is a flat cyan (`78, 192, 202`) matching the sky, with an
-orthographic size of `5`.
+The camera background colour is cyan (`78, 192, 202`), and orthographic size is `5`.
 
 ### 5.2 Audio
 
-Sound effects are synthesised as raw WAV data by the same editor script:
+Sounds are also generated as WAV files by the same editor script:
 
-| Clip | Synthesis | Trigger |
+| Clip | What it is | When it plays |
 | --- | --- | --- |
 | `flap` | Short 780 Hz tone | Every flap |
-| `point` | Two-tone 980 → 1320 Hz | Passing a pipe pair |
-| `hit` | Filtered noise burst | Collision |
-| `die` | Falling tone 420 → 110 Hz | Bird hitting the ground |
-| `wow` | Four-note arpeggio | Milestone every 5 points |
-| `firework` | Layered burst | Fireworks from score 10 |
-
----
+| `point` | Two tones 980 to 1320 Hz | Passing a pipe pair |
+| `hit` | Noise burst | Collision |
+| `die` | Falling tone 420 to 110 Hz | Hitting the ground |
+| `wow` | Short arpeggio | Every 5 points |
+| `firework` | Burst sound | Fireworks from score 10 |
 
 ## 6. UI
 
 | Screen | Elements |
 | --- | --- |
-| Ready | Best score, `TAP / SPACE` prompt, bobbing bird, **CHOOSE BIRD** picker |
-| Playing | Large score counter at the top; transient cheer messages |
-| Game Over | `GAME OVER`, final score, best score, medal, **RESTART** button |
+| Ready | Best score, `TAP / SPACE`, bobbing bird, **CHOOSE BIRD** |
+| Playing | Big score at the top, short cheer messages |
+| Game Over | `GAME OVER`, final score, best score, medal, **RESTART** |
 
-The HUD is deliberately minimal during play — only the score is permanently
-visible — so nothing competes with the pipes for the player's attention.
-
----
+During play the HUD stays simple. Mostly only the score is always on screen, so it does not block the pipes.
 
 ## 7. Scope and future work
 
-### 7.1 Delivered
+### 7.1 What is already in the game
 
-- Complete ready → playing → game over loop with persistent best score
-- Pooled, randomised endless pipe generation
-- Six-colour cosmetic bird selection
-- Milestone cheer messages with escalating tiers
-- Feather burst on impact, tinted to the selected bird
-- Fireworks, alternate bird design and dragon hazard as score-gated rewards
-- Four-tier medal system
-- Fully procedural art and audio pipeline
+- Full ready -> playing -> game over loop with saved best score
+- Endless random pipes with object pooling
+- Six cosmetic bird colours
+- Cheer messages every 5 points
+- Feather burst on hit, matching the bird colour
+- Fireworks, alternate bird look, and dragon as score rewards
+- Four medal levels
+- Art and audio generated by code
 
-### 7.2 Possible extensions
+### 7.2 Possible future ideas
 
-- Mobile touch build with resolution-independent UI scaling
-- Day / night background variants driven by score
-- Local leaderboard with named entries
-- Accessibility options for reduced particle effects and adjustable gravity
-- Unlockable bird skins tied to medal tiers
+- Mobile version with touch controls
+- Day / night backgrounds based on score
+- Local leaderboard with names
+- Options for fewer particles or easier gravity
+- Extra bird skins unlocked by medals
