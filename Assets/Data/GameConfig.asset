@@ -32,3 +32,5 @@ MonoBehaviour:
   pipeMinCenterY: -1.15
   pipeMaxCenterY: 2.05
   gameOverUiDelay: 0.85
+  hardModeFromScore: 15
+  hardModeScrollMultiplier: 1.5

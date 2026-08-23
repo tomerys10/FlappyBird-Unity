@@ -1,21 +1,28 @@
 using UnityEngine;
 
 /// <summary>
-/// Celebration feedback: the "nice one" sound and the small firework bursts.
+/// Celebration feedback: the "nice one" sound and the small firework bursts,
+/// plus hard-mode rain once the run gets serious.
 /// Created automatically by the GameManager so the scene needs no extra wiring.
 /// </summary>
 public class GameEffects : MonoBehaviour
 {
     private const int SparkCount = 24;
     private const int FeatherCount = 12;
+    private const int RainDropCount = 40;
+    private const float RainSpawnInterval = 0.045f;
 
     private AudioSource source;
     private AudioClip comboClip;
     private AudioClip fireworkClip;
     private Spark[] sparks;
     private Feather[] feathers;
+    private RainDrop[] rainDrops;
     private Sprite sparkSprite;
     private Sprite featherSprite;
+    private Sprite rainSprite;
+    private bool raining;
+    private float rainSpawnTimer;
 
     private struct Spark
     {
@@ -33,6 +40,15 @@ public class GameEffects : MonoBehaviour
         public Vector2 velocity;
         public float spin;
         public float flutter;
+        public float life;
+        public float maxLife;
+    }
+
+    private struct RainDrop
+    {
+        public Transform transform;
+        public SpriteRenderer renderer;
+        public Vector2 velocity;
         public float life;
         public float maxLife;
     }
@@ -94,6 +110,16 @@ public class GameEffects : MonoBehaviour
         {
             CreateFeatherPool();
         }
+
+        if (rainSprite == null)
+        {
+            rainSprite = MakeRainDropSprite();
+        }
+
+        if (!RainPoolIsValid())
+        {
+            CreateRainPool();
+        }
     }
 
     private bool PoolIsValid()
@@ -124,6 +150,24 @@ public class GameEffects : MonoBehaviour
         for (int i = 0; i < feathers.Length; i++)
         {
             if (feathers[i].transform == null || feathers[i].renderer == null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool RainPoolIsValid()
+    {
+        if (rainDrops == null || rainDrops.Length != RainDropCount)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < rainDrops.Length; i++)
+        {
+            if (rainDrops[i].transform == null || rainDrops[i].renderer == null)
             {
                 return false;
             }
@@ -173,6 +217,41 @@ public class GameEffects : MonoBehaviour
                 life = 0f,
                 maxLife = 1f
             };
+        }
+    }
+
+    private void CreateRainPool()
+    {
+        rainDrops = new RainDrop[RainDropCount];
+        for (int i = 0; i < RainDropCount; i++)
+        {
+            var go = new GameObject("RainDrop");
+            go.transform.SetParent(transform, false);
+            SpriteRenderer renderer = SpriteLibrary.CreateRenderer(go, rainSprite, "Bird", 8);
+            go.SetActive(false);
+
+            rainDrops[i] = new RainDrop
+            {
+                transform = go.transform,
+                renderer = renderer,
+                velocity = Vector2.zero,
+                life = 0f,
+                maxLife = 1f
+            };
+        }
+    }
+
+    /// <summary>
+    /// Soft rain overlay for hard mode. Visual only — no collisions.
+    /// </summary>
+    public void SetRaining(bool enabled)
+    {
+        EnsureReady();
+        raining = enabled;
+        if (!enabled)
+        {
+            rainSpawnTimer = 0f;
+            HideRain();
         }
     }
 
@@ -301,10 +380,14 @@ public class GameEffects : MonoBehaviour
         }
 
         UpdateFeathers(dt);
+        UpdateRain(dt);
     }
 
     public void StopAll()
     {
+        raining = false;
+        rainSpawnTimer = 0f;
+
         if (sparks != null)
         {
             for (int i = 0; i < sparks.Length; i++)
@@ -326,6 +409,8 @@ public class GameEffects : MonoBehaviour
                 }
             }
         }
+
+        HideRain();
     }
 
     private void UpdateFeathers(float dt)
@@ -360,6 +445,138 @@ public class GameEffects : MonoBehaviour
             color.a = Mathf.Clamp01(feathers[i].life / feathers[i].maxLife);
             featherRenderer.color = color;
         }
+    }
+
+    private void UpdateRain(float dt)
+    {
+        if (rainDrops == null)
+        {
+            return;
+        }
+
+        if (raining)
+        {
+            rainSpawnTimer -= dt;
+            while (rainSpawnTimer <= 0f)
+            {
+                rainSpawnTimer += RainSpawnInterval;
+                SpawnRainDrop();
+            }
+        }
+
+        for (int i = 0; i < rainDrops.Length; i++)
+        {
+            Transform dropTransform = rainDrops[i].transform;
+            SpriteRenderer dropRenderer = rainDrops[i].renderer;
+            if (dropTransform == null || dropRenderer == null || !dropTransform.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            rainDrops[i].life -= dt;
+            if (rainDrops[i].life <= 0f || dropTransform.position.y < -5.2f)
+            {
+                dropTransform.gameObject.SetActive(false);
+                continue;
+            }
+
+            dropTransform.Translate(rainDrops[i].velocity * dt, Space.World);
+
+            Color color = dropRenderer.color;
+            float fade = Mathf.Clamp01(rainDrops[i].life / Mathf.Max(0.15f, rainDrops[i].maxLife));
+            color.a = 0.35f + fade * 0.45f;
+            dropRenderer.color = color;
+        }
+    }
+
+    private void SpawnRainDrop()
+    {
+        if (rainDrops == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < rainDrops.Length; i++)
+        {
+            if (rainDrops[i].transform == null || rainDrops[i].renderer == null || rainDrops[i].transform.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            float x = Random.Range(-5.4f, 5.4f);
+            float y = Random.Range(4.9f, 6.2f);
+            float fall = Random.Range(7.5f, 11.5f);
+            float drift = Random.Range(-1.8f, -0.4f);
+
+            rainDrops[i].transform.position = new Vector3(x, y, 0f);
+            rainDrops[i].transform.localScale = new Vector3(
+                Random.Range(0.55f, 0.9f),
+                Random.Range(1.1f, 1.7f),
+                1f);
+            rainDrops[i].transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(-18f, -8f));
+            rainDrops[i].velocity = new Vector2(drift, -fall);
+            rainDrops[i].maxLife = Random.Range(0.85f, 1.35f);
+            rainDrops[i].life = rainDrops[i].maxLife;
+
+            float shade = Random.Range(0.85f, 1.05f);
+            rainDrops[i].renderer.color = new Color(0.55f * shade, 0.78f * shade, 1f, 0.7f);
+            rainDrops[i].transform.gameObject.SetActive(true);
+            return;
+        }
+    }
+
+    private void HideRain()
+    {
+        if (rainDrops == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < rainDrops.Length; i++)
+        {
+            if (rainDrops[i].transform != null)
+            {
+                rainDrops[i].transform.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private static Sprite MakeRainDropSprite()
+    {
+        const int width = 4;
+        const int height = 10;
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            filterMode = FilterMode.Point
+        };
+
+        Color32 clear = new Color32(0, 0, 0, 0);
+        Color32 tip = new Color32(210, 235, 255, 255);
+        Color32 body = new Color32(160, 210, 255, 230);
+        Color32[] pixels = new Color32[width * height];
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = clear;
+        }
+
+        // Simple teardrop silhouette.
+        int[] rowStarts = { 1, 1, 1, 0, 0, 0, 1, 1, 1, 1 };
+        int[] rowEnds = { 2, 2, 2, 3, 3, 3, 2, 2, 2, 2 };
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = rowStarts[y]; x <= rowEnds[y]; x++)
+            {
+                pixels[y * width + x] = y >= height - 2 ? tip : body;
+            }
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
+
+        var sprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), 32f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
     }
 
     private static Sprite MakeFeatherSprite()

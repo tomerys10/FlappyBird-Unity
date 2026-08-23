@@ -26,7 +26,7 @@ public class ScrollRepeater : MonoBehaviour
             return;
         }
 
-        float delta = manager.Config.scrollSpeed * Time.deltaTime;
+        float delta = manager.CurrentScrollSpeed * Time.deltaTime;
         leftPiece.Translate(Vector3.left * delta);
         rightPiece.Translate(Vector3.left * delta);
 

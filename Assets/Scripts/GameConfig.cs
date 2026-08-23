@@ -19,6 +19,12 @@ public class GameConfig : ScriptableObject
     public float groundY = -4.7f;
     public float ceilingY = 4.85f;
 
+    [Header("Hard mode")]
+    [Tooltip("From this score the world scrolls faster.")]
+    public int hardModeFromScore = 15;
+    [Tooltip("Scroll speed multiplier after hard mode starts (1.5 = 50% faster).")]
+    public float hardModeScrollMultiplier = 1.5f;
+
     [Header("Pipes")]
     public float pipeSpawnInterval = 1.5f;
     public float pipeSpawnX = 7.5f;

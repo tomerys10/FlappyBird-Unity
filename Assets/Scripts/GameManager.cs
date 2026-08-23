@@ -19,6 +19,27 @@ public class GameManager : MonoBehaviour
     public int BestScore { get; private set; }
     public GameConfig Config => config;
 
+    /// <summary>
+    /// Base scroll speed until hard mode, then a faster multiplier so late runs feel harder.
+    /// </summary>
+    public float CurrentScrollSpeed
+    {
+        get
+        {
+            if (config == null)
+            {
+                return 2.55f;
+            }
+
+            if (Score >= config.hardModeFromScore)
+            {
+                return config.scrollSpeed * config.hardModeScrollMultiplier;
+            }
+
+            return config.scrollSpeed;
+        }
+    }
+
     private const string BestScoreKey = "FlappyBird.BestScore";
 
     private GameEffects effects;
@@ -169,6 +190,11 @@ public class GameManager : MonoBehaviour
         Score = 0;
         State = GameState.Playing;
 
+        if (effects != null)
+        {
+            effects.SetRaining(false);
+        }
+
         if (bird != null)
         {
             bird.StartPlaying();
@@ -240,6 +266,11 @@ public class GameManager : MonoBehaviour
         {
             dragon.Activate(config, bird != null ? bird.transform : null);
         }
+
+        if (effects != null && Score >= config.hardModeFromScore)
+        {
+            effects.SetRaining(true);
+        }
     }
 
     public void OnPlayerHit()
@@ -266,6 +297,11 @@ public class GameManager : MonoBehaviour
         if (dragon != null)
         {
             dragon.Deactivate();
+        }
+
+        if (effects != null)
+        {
+            effects.SetRaining(false);
         }
 
         if (bird != null)

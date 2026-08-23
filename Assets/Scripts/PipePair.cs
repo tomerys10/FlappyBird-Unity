@@ -50,7 +50,7 @@ public class PipePair : MonoBehaviour
         }
 
         GameConfig config = manager.Config;
-        transform.Translate(Vector3.left * config.scrollSpeed * Time.deltaTime);
+        transform.Translate(Vector3.left * manager.CurrentScrollSpeed * Time.deltaTime);
 
         float birdX = bird != null ? bird.position.x : -1.4f;
         if (!scored && transform.position.x <= birdX)
