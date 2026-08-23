@@ -16,7 +16,8 @@ public class GameConfig : ScriptableObject
 
     [Header("World")]
     public float scrollSpeed = 2.55f;
-    public float ceilingY = 5.1f;
+    public float groundY = -4.7f;
+    public float ceilingY = 4.85f;
 
     [Header("Pipes")]
     public float pipeSpawnInterval = 1.5f;

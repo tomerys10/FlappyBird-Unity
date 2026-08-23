@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
 
         HideLoosePipes();
         FixCamera();
+        AlignWorldBounds();
         SpriteLibrary.FixAllSceneMaterials();
         CreateHelpers();
     }
@@ -77,21 +78,63 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Keep the kill floors on the visible screen edges so the bird only dies
+    /// when it reaches the very bottom (or top), not mid-air.
+    /// </summary>
+    private void AlignWorldBounds()
+    {
+        if (config == null)
+        {
+            return;
+        }
+
+        GameObject ground = GameObject.Find("Ground");
+        if (ground != null)
+        {
+            Vector3 p = ground.transform.position;
+            ground.transform.position = new Vector3(p.x, config.groundY, p.z);
+        }
+
+        GameObject ceiling = GameObject.Find("Ceiling");
+        if (ceiling != null)
+        {
+            Vector3 p = ceiling.transform.position;
+            ceiling.transform.position = new Vector3(p.x, config.ceilingY, p.z);
+        }
+    }
+
+    /// <summary>
     /// Pipe halves left in the scene root while building it would sit in front of
-    /// the camera forever, so they are switched off before the first frame.
+    /// the camera forever, so they are removed before the first frame.
     /// </summary>
     private static void HideLoosePipes()
     {
-        HideIfLoose("PipeTop");
-        HideIfLoose("PipeBottom");
+        DestroyLoosePipe("PipeTop");
+        DestroyLoosePipe("PipeBottom");
     }
 
-    private static void HideIfLoose(string objectName)
+    private static void DestroyLoosePipe(string objectName)
     {
-        GameObject found = GameObject.Find(objectName);
-        if (found != null && found.GetComponent<PipePair>() == null && found.transform.parent == null)
+        Transform[] all = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < all.Length; i++)
         {
-            found.SetActive(false);
+            Transform t = all[i];
+            if (t == null || t.name != objectName || t.hideFlags != HideFlags.None)
+            {
+                continue;
+            }
+
+            if (t.gameObject.scene.name == null || !t.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            if (t.GetComponentInParent<PipePair>() != null || t.parent != null)
+            {
+                continue;
+            }
+
+            Object.Destroy(t.gameObject);
         }
     }
 

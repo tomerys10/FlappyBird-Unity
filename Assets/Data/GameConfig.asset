@@ -23,8 +23,8 @@ MonoBehaviour:
   rotateLerp: 8
   flapAnimFps: 10
   scrollSpeed: 2.55
-  groundY: -3.65
-  ceilingY: 5.1
+  groundY: -4.7
+  ceilingY: 4.85
   pipeSpawnInterval: 1.35
   pipeSpawnX: 7.5
   pipeDespawnX: -8.5
