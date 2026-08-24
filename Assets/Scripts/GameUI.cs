@@ -55,11 +55,7 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// The UI objects were all dropped in the canvas center, so score and Restart
-    /// painted on top of each other. This places them once, regardless of how they
-    /// were arranged by hand.
-    /// </summary>
+    // Put score, hint and restart in the right places on screen.
     private void LayoutHud()
     {
         PlaceText(scoreText, new Vector2(0.5f, 1f), new Vector2(0f, -90f), new Vector2(640f, 160f), 92f);

@@ -1,9 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Loads the generated art and audio that is not wired through the inspector.
-/// Everything lives under Resources so builds on other machines behave the same.
-/// </summary>
+// Loads art and audio from Resources so the game works after a clone too.
 public static class SpriteLibrary
 {
     private const string ArtPath = "FlappyArt/";
@@ -29,10 +26,7 @@ public static class SpriteLibrary
         return Resources.Load<AudioClip>(AudioPath + clipName);
     }
 
-    /// <summary>
-    /// Prefer a material shipped in Resources so sprites never wait on Shader.Find
-    /// during the first frames after a fresh open.
-    /// </summary>
+    // Use a material from Resources so sprites show up right away.
     public static Material SpriteMaterial
     {
         get
@@ -72,9 +66,7 @@ public static class SpriteLibrary
         return shader != null && shader.isSupported && shader.name != "Hidden/InternalErrorShader";
     }
 
-    /// <summary>
-    /// Applies a known-good sprite material to every SpriteRenderer in the scene.
-    /// </summary>
+    // Fix materials on all sprites in the scene so nothing stays invisible.
     public static void FixAllSceneMaterials()
     {
         Material material = SpriteMaterial;

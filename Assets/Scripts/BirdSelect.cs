@@ -2,10 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Color picker shown on the ready screen. Tints the existing bird sprites so
-/// the player can pick a look before the first flap.
-/// </summary>
+// Lets the player pick a bird color on the ready screen.
 public class BirdSelect : MonoBehaviour
 {
     private static readonly Color[] Palette =

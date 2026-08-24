@@ -46,11 +46,7 @@ public class BirdController : MonoBehaviour
         RebuildVisuals();
     }
 
-    /// <summary>
-    /// Scene sprites can stay invisible when package materials fail to load.
-    /// Rebuild the bird the same way pipes do: Resources sprite + project material,
-    /// with a procedural sprite as the last resort.
-    /// </summary>
+    // Make sure the bird can be seen: load sprite + material, or draw a backup.
     private void RebuildVisuals()
     {
         if (spriteRenderer == null)

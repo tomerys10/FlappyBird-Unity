@@ -1,8 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// A horizontal projectile shot by the dragon. Pooled by <see cref="Dragon"/>.
-/// </summary>
+// Fireball shot by the dragon. Reused from a pool.
 public class Fireball : MonoBehaviour
 {
     private float speed;

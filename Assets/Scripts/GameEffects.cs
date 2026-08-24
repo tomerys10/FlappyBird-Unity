@@ -1,10 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Celebration feedback: the "nice one" sound and the small firework bursts,
-/// plus hard-mode rain once the run gets serious.
-/// Created automatically by the GameManager so the scene needs no extra wiring.
-/// </summary>
+// Sounds and effects: combo sound, fireworks, feathers, and hard-mode rain.
 public class GameEffects : MonoBehaviour
 {
     private const int SparkCount = 24;
@@ -241,9 +237,7 @@ public class GameEffects : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Soft rain overlay for hard mode. Visual only — no collisions.
-    /// </summary>
+    // Turn rain on or off. Looks only, does not hurt the bird.
     public void SetRaining(bool enabled)
     {
         EnsureReady();

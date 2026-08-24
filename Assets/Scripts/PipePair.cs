@@ -65,10 +65,7 @@ public class PipePair : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// The prefab may reach the game without its two halves linked, so the pair
-    /// rebuilds anything that is missing instead of throwing every frame.
-    /// </summary>
+    // If the pipe pieces are missing, build them here so the game does not crash.
     private void EnsurePipes()
     {
         if (bottomPipe == null)
@@ -132,10 +129,7 @@ public class PipePair : MonoBehaviour
         return pipeSprite;
     }
 
-    /// <summary>
-    /// A clone without the generated art would spawn invisible pipes that still
-    /// kill the player, so an equivalent pipe is drawn in code as a last resort.
-    /// </summary>
+    // Backup pipe sprite if the art files are missing.
     private static Sprite BuildFallbackPipe()
     {
         const int width = 52;

@@ -1,10 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Late game hazard. The dragon flies in from the right once the player is good
-/// enough, follows the bird height slowly and shoots horizontal fireballs, so the
-/// player can always dodge by changing altitude.
-/// </summary>
+// Late enemy: comes in at a high score, follows the bird, shoots fireballs.
 public class Dragon : MonoBehaviour
 {
     private const int FireballPoolSize = 4;
@@ -22,10 +18,7 @@ public class Dragon : MonoBehaviour
 
     public bool IsActive => active;
 
-    /// <summary>
-    /// Without the generated art the dragon and its shots are invisible, which
-    /// would kill the player for no visible reason, so it stays out of the game.
-    /// </summary>
+    // Only play the dragon if its art exists, so you do not die from nothing.
     public bool CanActivate => hasArt;
 
     private void Awake()

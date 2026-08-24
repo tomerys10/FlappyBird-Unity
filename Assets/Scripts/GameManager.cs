@@ -19,9 +19,7 @@ public class GameManager : MonoBehaviour
     public int BestScore { get; private set; }
     public GameConfig Config => config;
 
-    /// <summary>
-    /// Base scroll speed until hard mode, then a faster multiplier so late runs feel harder.
-    /// </summary>
+    // Normal speed at first. From hard mode score it gets faster.
     public float CurrentScrollSpeed
     {
         get
@@ -98,10 +96,7 @@ public class GameManager : MonoBehaviour
         cam.backgroundColor = new Color(78f / 255f, 192f / 255f, 202f / 255f);
     }
 
-    /// <summary>
-    /// Keep the kill floors on the visible screen edges so the bird only dies
-    /// when it reaches the very bottom (or top), not mid-air.
-    /// </summary>
+    // Put ground and ceiling death lines at the real edges of the screen.
     private void AlignWorldBounds()
     {
         if (config == null)
@@ -124,10 +119,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Pipe halves left in the scene root while building it would sit in front of
-    /// the camera forever, so they are removed before the first frame.
-    /// </summary>
+    // Remove leftover pipe objects that were left in the scene by mistake.
     private static void HideLoosePipes()
     {
         DestroyLoosePipe("PipeTop");
