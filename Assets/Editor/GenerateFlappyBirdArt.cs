@@ -46,7 +46,7 @@ public static class GenerateFlappyBirdArt
         AssetDatabase.Refresh();
         EditorUtility.DisplayDialog(
             "Flappy Bird",
-            "Art, audio and GameConfig were generated.\nFollow the scene setup steps in Cursor.",
+            "Art, audio and GameConfig were generated.",
             "OK");
     }
 
